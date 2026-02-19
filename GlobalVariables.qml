@@ -14,7 +14,7 @@ Singleton { id: root
 		readonly property int radius: 8
 		readonly property int barHeight: 38
 		readonly property int iconSize: 16
-		readonly property string terminal: "ghostty"
+		readonly property string terminal: "kitty"
 	}
 	readonly property var font: QtObject {
 		readonly property var sans: "Adwaita Sans"

@@ -20,13 +20,14 @@ Scope { id: root
 			// barHeight: 36
 
 			leftItems: [
-				Power {}
-				,Network {}
-				,Bluetooth {}
-				,Audio {}
-				,MusicPlayer {
-					minBarWidth: 100
-				}
+				Clock {}
+				//Power {}
+				//,Network {}
+				//,Bluetooth {}
+				//,Audio {}
+				//,MusicPlayer {
+				//	minBarWidth: 100
+				//}
 				// ,Shazam {}
 			]
 
@@ -40,14 +41,14 @@ Scope { id: root
 
 			rightItems: [
 				Tray {}
-				,NotifyUpdate {}
-				,Caffeine {}
-				,Redeye {}
-				,Seperator {}
-				,Weather {}
-				,Clock {}
+				//,NotifyUpdate {}
+				//,Caffeine {}
+				//,Redeye {}
+				//,Seperator {}
+				//,Weather {}
+				//,Clock {}
 				,Battery {}
-				,NotificationTray {}
+				//,NotificationTray {}
 			]
 		}
 	}
