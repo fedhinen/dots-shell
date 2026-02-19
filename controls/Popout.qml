@@ -21,6 +21,7 @@ Item { id: root
 
 	property bool isOpen: false
 	property bool debug
+	property real xOffset: 0
 
 	function open() {
 		Popout.whosOpen = anchor;
@@ -75,7 +76,7 @@ Item { id: root
 		}
 		anchor {
 			item: root;
-			rect { x: root.width /2 -width /2; y: root.height; } // prefer window center horizontally to anchor and bellow bar
+			rect { x: root.width /2 -width /2 +xOffset; y: root.height; } 
 		}
 		implicitWidth: window.width +60
 		implicitHeight: window.height +60
@@ -91,7 +92,7 @@ Item { id: root
 
 		// wrapper for all contents in popout
 		Rectangle { id: window
-			x: frame.width /2 -width /2
+			x: frame.width /2 -width /2 +xOffset
 			width: Math.max((header? header.width : 0), body.width, GlobalVariables.controls.radius *2)
 			height: (header? header.height : 0) +body.height
 			radius: GlobalVariables.controls.radius
