@@ -21,134 +21,321 @@ Singleton { id: root
 		anchors.fill: parent
 
 		SystemClock { id: clock
-			precision: SystemClock.Seconds
+			precision: SystemClock.Minutes
 		}
 
-		ColumnLayout {
+		// ── Word Clock logic ──────────────────────────────────────────
+		QtObject { id: wordClock
+			readonly property int h: parseInt(Qt.formatDateTime(clock.date, "h"))  // 1-12
+			readonly property int m: parseInt(Qt.formatDateTime(clock.date, "m"))  // 0-59
+
+			// minute bucket:
+			//  0 = o'clock          (xx:00-xx:02)
+			//  1 = five past        (xx:03-xx:07)
+			//  2 = ten past         (xx:08-xx:12)
+			//  3 = quarter past     (xx:13-xx:17)
+			//  4 = twenty past      (xx:18-xx:22)
+			//  5 = twenty five past (xx:23-xx:27)
+			//  6 = half past        (xx:28-xx:32)
+			//  7 = twenty five to   (xx:33-xx:37)
+			//  8 = twenty to        (xx:38-xx:42)
+			//  9 = quarter to       (xx:43-xx:47)
+			// 10 = ten to           (xx:48-xx:52)
+			// 11 = five to          (xx:53-xx:57)
+			//  0 = o'clock (next)   (xx:58-xx:59)
+			readonly property int bucket: {
+				if      (m <  3) return 0;
+				else if (m <  8) return 1;
+				else if (m < 13) return 2;
+				else if (m < 18) return 3;
+				else if (m < 23) return 4;
+				else if (m < 28) return 5;
+				else if (m < 33) return 6;
+				else if (m < 38) return 7;
+				else if (m < 43) return 8;
+				else if (m < 48) return 9;
+				else if (m < 53) return 10;
+				else if (m < 58) return 11;
+				else             return 0;
+			}
+
+			// hour to display (advance when past the half)
+			readonly property int displayHour: {
+				let base = (m >= 33) ? (h % 12) + 1 : h;
+				if (base > 12) base = 1;
+				if (base < 1)  base = 12;
+				return base;
+			}
+
+			// active words
+			readonly property bool showHalf:     bucket === 6
+			readonly property bool showQuarter:  bucket === 3 || bucket === 9
+			readonly property bool showTwenty:   bucket === 4 || bucket === 5 || bucket === 7 || bucket === 8
+			readonly property bool showFiveMins: bucket === 1 || bucket === 5 || bucket === 7 || bucket === 11
+			readonly property bool showTenMins:  bucket === 2 || bucket === 10
+			readonly property bool showPast:     bucket >= 1 && bucket <= 6
+			readonly property bool showTo:       bucket >= 7 && bucket <= 11
+			readonly property bool showOClock:   bucket === 0
+			readonly property bool showOne:      displayHour === 1
+			readonly property bool showTwo:      displayHour === 2
+			readonly property bool showThree:    displayHour === 3
+			readonly property bool showFour:     displayHour === 4
+			readonly property bool showFiveHour: displayHour === 5
+			readonly property bool showSix:      displayHour === 6
+			readonly property bool showSeven:    displayHour === 7
+			readonly property bool showEight:    displayHour === 8
+			readonly property bool showNine:     displayHour === 9
+			readonly property bool showTen:      displayHour === 10
+			readonly property bool showEleven:   displayHour === 11
+			readonly property bool showTwelve:   displayHour === 12
+		}
+
+		// ── Word Clock grid ───────────────────────────────────────────
+		// Layout mirrors the image: letter grid where words light up.
+		// Inactive letters shown at low opacity. Active ones are bright + bold.
+		Column {
+			id: wordGrid
+			anchors.centerIn: parent
+			anchors.verticalCenterOffset: -50
+			spacing: 4
+
+			readonly property int sz: 22
+			readonly property color on:  GlobalVariables.colours.text
+			readonly property color off: Qt.rgba(
+				GlobalVariables.colours.text.r,
+				GlobalVariables.colours.text.g,
+				GlobalVariables.colours.text.b,
+				0.18
+			)
+
+			component CC: Text {
+				property bool lit: false
+				width:  wordGrid.sz
+				height: wordGrid.sz
+				horizontalAlignment: Text.AlignHCenter
+				verticalAlignment:   Text.AlignVCenter
+				font.family:  GlobalVariables.font.sans
+				font.pixelSize: wordGrid.sz - 4
+				font.weight: lit ? Font.Bold : Font.Normal
+				color: lit ? wordGrid.on : wordGrid.off
+				Behavior on color { ColorAnimation { duration: 300 } }
+			}
+
+			// Row 1:  I T · I S · A S A M P M
+			Row {
+				anchors.horizontalCenter: parent.horizontalCenter
+				spacing: 2
+				CC { text: "I"; lit: true }
+				CC { text: "T"; lit: true }
+				CC { text: " "; lit: false }
+				CC { text: "I"; lit: true }
+				CC { text: "S"; lit: true }
+				CC { text: " "; lit: false }
+				CC { text: "A"; lit: false }
+				CC { text: "S"; lit: false }
+				CC { text: "A"; lit: false }
+				CC { text: "M"; lit: false }
+				CC { text: "P"; lit: false }
+				CC { text: "M"; lit: false }
+			}
+
+			// Row 2:  A C Q U A R T E R D C
+			Row {
+				anchors.horizontalCenter: parent.horizontalCenter
+				spacing: 2
+				CC { text: "A"; lit: false }
+				CC { text: "C"; lit: false }
+				CC { text: "Q"; lit: wordClock.showQuarter }
+				CC { text: "U"; lit: wordClock.showQuarter }
+				CC { text: "A"; lit: wordClock.showQuarter }
+				CC { text: "R"; lit: wordClock.showQuarter }
+				CC { text: "T"; lit: wordClock.showQuarter }
+				CC { text: "E"; lit: wordClock.showQuarter }
+				CC { text: "R"; lit: wordClock.showQuarter }
+				CC { text: "D"; lit: false }
+				CC { text: "C"; lit: false }
+			}
+
+			// Row 3:  T W E N T Y F I V E X
+			Row {
+				anchors.horizontalCenter: parent.horizontalCenter
+				spacing: 2
+				CC { text: "T"; lit: wordClock.showTwenty }
+				CC { text: "W"; lit: wordClock.showTwenty }
+				CC { text: "E"; lit: wordClock.showTwenty }
+				CC { text: "N"; lit: wordClock.showTwenty }
+				CC { text: "T"; lit: wordClock.showTwenty }
+				CC { text: "Y"; lit: wordClock.showTwenty }
+				CC { text: "F"; lit: wordClock.showFiveMins }
+				CC { text: "I"; lit: wordClock.showFiveMins }
+				CC { text: "V"; lit: wordClock.showFiveMins }
+				CC { text: "E"; lit: wordClock.showFiveMins }
+				CC { text: "X"; lit: false }
+			}
+
+			// Row 4:  H A L F B T E N T O
+			Row {
+				anchors.horizontalCenter: parent.horizontalCenter
+				spacing: 2
+				CC { text: "H"; lit: wordClock.showHalf }
+				CC { text: "A"; lit: wordClock.showHalf }
+				CC { text: "L"; lit: wordClock.showHalf }
+				CC { text: "F"; lit: wordClock.showHalf }
+				CC { text: "B"; lit: false }
+				CC { text: "T"; lit: wordClock.showTenMins }
+				CC { text: "E"; lit: wordClock.showTenMins }
+				CC { text: "N"; lit: wordClock.showTenMins }
+				CC { text: "T"; lit: wordClock.showTo }
+				CC { text: "O"; lit: wordClock.showTo }
+			}
+
+			// Row 5:  P A S T B R U N I N E
+			Row {
+				anchors.horizontalCenter: parent.horizontalCenter
+				spacing: 2
+				CC { text: "P"; lit: wordClock.showPast }
+				CC { text: "A"; lit: wordClock.showPast }
+				CC { text: "S"; lit: wordClock.showPast }
+				CC { text: "T"; lit: wordClock.showPast }
+				CC { text: "B"; lit: false }
+				CC { text: "R"; lit: false }
+				CC { text: "U"; lit: false }
+				CC { text: "N"; lit: wordClock.showNine }
+				CC { text: "I"; lit: wordClock.showNine }
+				CC { text: "N"; lit: wordClock.showNine }
+				CC { text: "E"; lit: wordClock.showNine }
+			}
+
+			// Row 6:  O N E S I X T H R E E
+			Row {
+				anchors.horizontalCenter: parent.horizontalCenter
+				spacing: 2
+				CC { text: "O"; lit: wordClock.showOne }
+				CC { text: "N"; lit: wordClock.showOne }
+				CC { text: "E"; lit: wordClock.showOne }
+				CC { text: "S"; lit: wordClock.showSix }
+				CC { text: "I"; lit: wordClock.showSix }
+				CC { text: "X"; lit: wordClock.showSix }
+				CC { text: "T"; lit: wordClock.showThree }
+				CC { text: "H"; lit: wordClock.showThree }
+				CC { text: "R"; lit: wordClock.showThree }
+				CC { text: "E"; lit: wordClock.showThree }
+				CC { text: "E"; lit: wordClock.showThree }
+			}
+
+			// Row 7:  F O U R F I V E T W O
+			Row {
+				anchors.horizontalCenter: parent.horizontalCenter
+				spacing: 2
+				CC { text: "F"; lit: wordClock.showFour }
+				CC { text: "O"; lit: wordClock.showFour }
+				CC { text: "U"; lit: wordClock.showFour }
+				CC { text: "R"; lit: wordClock.showFour }
+				CC { text: "F"; lit: wordClock.showFiveHour }
+				CC { text: "I"; lit: wordClock.showFiveHour }
+				CC { text: "V"; lit: wordClock.showFiveHour }
+				CC { text: "E"; lit: wordClock.showFiveHour }
+				CC { text: "T"; lit: wordClock.showTwo }
+				CC { text: "W"; lit: wordClock.showTwo }
+				CC { text: "O"; lit: wordClock.showTwo }
+			}
+
+			// Row 8:  E I G H T E L E V E N
+			Row {
+				anchors.horizontalCenter: parent.horizontalCenter
+				spacing: 2
+				CC { text: "E"; lit: wordClock.showEight }
+				CC { text: "I"; lit: wordClock.showEight }
+				CC { text: "G"; lit: wordClock.showEight }
+				CC { text: "H"; lit: wordClock.showEight }
+				CC { text: "T"; lit: wordClock.showEight }
+				CC { text: "E"; lit: wordClock.showEleven }
+				CC { text: "L"; lit: wordClock.showEleven }
+				CC { text: "E"; lit: wordClock.showEleven }
+				CC { text: "V"; lit: wordClock.showEleven }
+				CC { text: "E"; lit: wordClock.showEleven }
+				CC { text: "N"; lit: wordClock.showEleven }
+			}
+
+			// Row 9:  S E V E N T W E L V E
+			Row {
+				anchors.horizontalCenter: parent.horizontalCenter
+				spacing: 2
+				CC { text: "S"; lit: wordClock.showSeven }
+				CC { text: "E"; lit: wordClock.showSeven }
+				CC { text: "V"; lit: wordClock.showSeven }
+				CC { text: "E"; lit: wordClock.showSeven }
+				CC { text: "N"; lit: wordClock.showSeven }
+				CC { text: "T"; lit: wordClock.showTwelve }
+				CC { text: "W"; lit: wordClock.showTwelve }
+				CC { text: "E"; lit: wordClock.showTwelve }
+				CC { text: "L"; lit: wordClock.showTwelve }
+				CC { text: "V"; lit: wordClock.showTwelve }
+				CC { text: "E"; lit: wordClock.showTwelve }
+			}
+
+			// Row 10:  T E N S E O C L O C K
+			Row {
+				anchors.horizontalCenter: parent.horizontalCenter
+				spacing: 2
+				CC { text: "T"; lit: wordClock.showTen }
+				CC { text: "E"; lit: wordClock.showTen }
+				CC { text: "N"; lit: wordClock.showTen }
+				CC { text: "S"; lit: false }
+				CC { text: "E"; lit: false }
+				CC { text: "O"; lit: wordClock.showOClock }
+				CC { text: "C"; lit: wordClock.showOClock }
+				CC { text: "L"; lit: wordClock.showOClock }
+				CC { text: "O"; lit: wordClock.showOClock }
+				CC { text: "C"; lit: wordClock.showOClock }
+				CC { text: "K"; lit: wordClock.showOClock }
+			}
+		}
+
+		// ── Password entry + lock icon ────────────────────────────────
+		Column {
 			anchors {
 				horizontalCenter: parent.horizontalCenter
-				top: parent.top
-				topMargin: parent.height /2 -(passwd.y +passwd.height /2) // centre on password entry field
+				bottom: parent.bottom
+				bottomMargin: parent.height * 0.10
 			}
-			spacing: GlobalVariables.controls.spacing
+			spacing: GlobalVariables.controls.spacing * 2
 
-			// clock
-			Text {
-				text: Qt.formatDateTime(clock.date, "hh:mm")
-				color: GlobalVariables.colours.text
-				font.family: "Adwaita Sans Mono"
-				font.pixelSize: 192
+			// lock icon (decorative, matches the image bottom)
+			IconImage {
+				anchors.horizontalCenter: parent.horizontalCenter
+				implicitSize: 28
+				source: Quickshell.iconPath("system-lock-screen")
 				layer.enabled: true
-				layer.effect: DropShadow {
-					samples: 128
-					color: GlobalVariables.colours.shadow
-				}
-			}
-
-			// date & weather
-			Row {
-				Layout.alignment: Qt.AlignHCenter
-				spacing: GlobalVariables.controls.spacing *2
-				layer.enabled: true
-				layer.effect: DropShadow {
-					samples: 64
-					color: GlobalVariables.colours.shadow
-				}
-
-				// date
-				Text {
-					anchors.verticalCenter: parent.verticalCenter
-					text: Qt.formatDateTime(clock.date, "dddd, MMMM d")
+				layer.effect: ColorOverlay {
 					color: GlobalVariables.colours.text
-					font.family: GlobalVariables.font.sans
-					font.pixelSize: 24
-				}
-
-				// weather
-				Item {
-					width: weatherIcon.width
-					height: weatherIcon.height
-
-					IconImage { id: weatherIcon
-						implicitSize: 30
-						source: Quickshell.iconPath(Service.Weather.getWeatherIcon(Service.Weather.weather.current.weather_code, Service.Weather.weather.current.is_day))
-						layer.enabled: true
-						layer.effect: OpacityMask {
-							invert: true
-							maskSource: Item {
-								width: weatherIcon.width
-								height: weatherIcon.height
-
-								Text {
-									anchors {
-										left: parent.right
-										leftMargin: -12
-										bottom: parent.bottom
-										bottomMargin: -4
-									}
-									text: parseInt(Service.Weather.weather.current.temperature_2m)
-									font.family: GlobalVariables.font.sans
-									font.pixelSize: 20
-									font.weight: 300
-									layer.enabled: true
-									layer.effect: Glow { samples: 8; }
-								}
-							}
-						}
-					}
-
-					Text {
-						anchors {
-							left: parent.right
-							leftMargin: -12
-							bottom: parent.bottom
-							bottomMargin: -4
-						}
-						text: parseInt(Service.Weather.weather.current.temperature_2m)
-						color: GlobalVariables.colours.text
-						font.family: GlobalVariables.font.sans
-						font.pixelSize: 20
-						font.weight: 300
-
-						Text {
-							anchors.left: parent.right
-							topPadding: 1
-							text: Service.Weather.weather.current_units.temperature_2m
-							color: GlobalVariables.colours.text
-							font: GlobalVariables.font.regular
-						}
-					}
 				}
 			}
 
-			// spacer
-			Item { Layout.preferredHeight: 48; }
-
-			// password text field
+			// password row
 			Row { id: passwd
-				Layout.alignment: Qt.AlignHCenter
+				anchors.horizontalCenter: parent.horizontalCenter
 				spacing: GlobalVariables.controls.spacing
 
 				Rectangle {
-					width: 320
-					height: textInput.height +GlobalVariables.controls.padding
-					// radius: height /2
+					width: 280
+					height: textInput.height + GlobalVariables.controls.padding
 					radius: GlobalVariables.controls.radius
 					color: GlobalVariables.colours.base
-					opacity: 0.975
+					opacity: 0.90
 
 					Style.Borders { opacity: 0.4; }
 
 					TextInput { id: textInput
 						anchors.centerIn: parent
-						width: parent.width -8
+						width: parent.width - 8
 						focus: true
 						cursorDelegate: Item {}
 						font: GlobalVariables.font.monolarge
 						horizontalAlignment: Text.AlignHCenter
-						color: lockContext.unlockInProgress? GlobalVariables.colours.windowText : GlobalVariables.colours.text
-						echoMode: TextInput.Password;
-						passwordCharacter: ""
+						color: lockContext.unlockInProgress ? GlobalVariables.colours.windowText : GlobalVariables.colours.text
+						echoMode: TextInput.Password
+						passwordCharacter: ""
 						inputMethodHints: Qt.ImhSensitiveData
 						enabled: !lockContext.unlockInProgress
 						layer.enabled: true
@@ -175,8 +362,6 @@ Singleton { id: root
 						color: GlobalVariables.colours.text
 						font: GlobalVariables.font.italic
 					}
-
-
 				}
 
 				Ctrl.QsButton { id: btn
@@ -186,34 +371,30 @@ Singleton { id: root
 					anim: enabled
 					onClicked: if (enabled) textInput.accepted();
 					content: Rectangle {
-						width: textInput.height +GlobalVariables.controls.padding
+						width: textInput.height + GlobalVariables.controls.padding
 						height: width
 						radius: GlobalVariables.controls.radius
 						color: GlobalVariables.colours.base
-						opacity: 0.975
+						opacity: 0.90
 						layer.enabled: true
 						layer.effect: ColorOverlay {
 							property color baseColor: GlobalVariables.colours.shadow
 							property color semiTransparent: Qt.rgba(baseColor.r, baseColor.g, baseColor.b, 0.5)
-
-							color: btn.enabled? "transparent" : semiTransparent
+							color: btn.enabled ? "transparent" : semiTransparent
 						}
 
 						Style.Borders { opacity: 0.4; }
 
 						IconImage {
 							anchors.centerIn: parent
-							implicitSize: parent.height -GlobalVariables.controls.spacing /2
+							implicitSize: parent.height - GlobalVariables.controls.spacing / 2
 							source: Quickshell.iconPath("draw-arrow-forward")
 						}
 					}
 				}
 			}
 
-			// spacer
-			Item { Layout.preferredHeight: 48; }
-
-			// music player
+			// music player (optional, only shown when active)
 			RowLayout {
 				visible: Service.MusicPlayer.active
 				spacing: GlobalVariables.controls.spacing
@@ -239,7 +420,7 @@ Singleton { id: root
 						anchors.centerIn: parent
 						visible: parent.containsMouse
 						implicitSize: 32
-						source: Service.MusicPlayer.activePlayer.isPlaying? Quickshell.iconPath("media-playback-pause") : Quickshell.iconPath("media-playback-start")
+						source: Service.MusicPlayer.activePlayer.isPlaying ? Quickshell.iconPath("media-playback-pause") : Quickshell.iconPath("media-playback-start")
 						layer.enabled: true
 						layer.effect: ColorOverlay { color: GlobalVariables.colours.text; }
 					}
@@ -247,8 +428,7 @@ Singleton { id: root
 
 				ColumnLayout { id: trackInfo
 					Layout.alignment: Qt.AlignTop
-					spacing: GlobalVariables.controls.spacing /2
-
+					spacing: GlobalVariables.controls.spacing / 2
 
 					Text { id: nowPlaying
 						text: "Now Playing"
@@ -271,7 +451,7 @@ Singleton { id: root
 						Layout.fillWidth: true
 						leftAlign: true
 						content: Row {
-							spacing: GlobalVariables.controls.spacing /2
+							spacing: GlobalVariables.controls.spacing / 2
 
 							Text {
 								text: Service.MusicPlayer.track.title
