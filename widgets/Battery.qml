@@ -55,8 +55,6 @@ QsButton { id: root
 	tooltip: isLaptopBattery? tooltipText : null
 	onClicked: popout.toggle();
 	content: Style.Battery {
-		height: 16
-		width: 10
 		percentage: isLaptopBattery? UPower.displayDevice.percentage : 1.0
 		isCharging: isLaptopBattery? !UPower.onBattery : false
 		material: true
