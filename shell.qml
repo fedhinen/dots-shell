@@ -9,70 +9,83 @@ import Quickshell
 import Quickshell.Io
 import qs.services as Service
 import qs.widgets
+import Niri 0.1
 
-Scope { id: root
-	property var colour: GlobalVariables.colours
+Scope {
+    id: root
+    property var colour: GlobalVariables.colours
 
-	// create bar on every screen
-	Variants {
-		model: Quickshell.screens
-		delegate: Bar {
-			// barHeight: 36
+    Niri {
+        id: niri
+        Component.onCompleted: {
+            niri.workspaces.maxCount = 6;
+            connect();
+        }
 
-			leftItems: [
-				Clock {}
-				//Power {}
-				//,Network {}
-				//,Bluetooth {}
-				//,Audio {}
-				//,MusicPlayer {
-				//	minBarWidth: 100
-				//}
-				// ,Shazam {}
-			]
+        onConnected: {
+            console.log("Niri connected to shell services");
+        }
+        onErrorOccurred: function (error) {
+            console.error("Niri connection error:", error);
+        }
+    }
 
-			centreItems: [
-				// NiriWorkspaces {
-				// 	// colours: [colour.highlight] // list of possible highlight colours
-				// 	clean: false // hide windows' dots
-				// }
-				NiriWorkspaces_Alt {}
-			]
+    // create bar on every screen
+    Variants {
+        model: Quickshell.screens
+        delegate: Bar {
+            // barHeight: 36
 
-			rightItems: [
-				Tray {}
-				//,NotifyUpdate {}
-				//,Caffeine {}
-				//,Redeye {}
-				//,Seperator {}
-				//,Weather {}
-				//,Clock {}
-				,Battery {}
-				//,NotificationTray {}
-			]
-		}
-	}
+            leftItems: [
+                Clock {}
+                //Power {}
+                //,Network {}
+                //,Bluetooth {}
+                //,Audio {}
+                //,MusicPlayer {
+                //	minBarWidth: 100
+                //}
+                // ,Shazam {}
 
-	// only show on main/active monitor
-	Brightness {}
 
-	// connect to shell services
-	Component.onCompleted: [
-		Service.Shell.init(),
-		Settings_Alpha.init(),
-		// Settings_Beta.init(),
-		Lockscreen.init(),
-		Notifications.init(),
-		AppLauncher.init(
-			10, // the maximum number of lines to display
-			true // hide category filters
-		),
-		Service.Redeye.init(
-			5500, // temperature in K
-			95, // gamma (0-100)
-			true, // enable geo located sunset/sunrise times (static times will be ignored if 'true')
-			"19:00", // static start time
-			"7:00" // static end time
-		)
-	]
+            ]
+
+            centreItems: [
+                // NiriWorkspaces {
+                // 	// colours: [colour.highlight] // list of possible highlight colours
+                // 	clean: false // hide windows' dots
+                // }
+                NiriWorkspaces_Alt {}
+            ]
+
+            rightItems: [
+                Tray {},
+                //,NotifyUpdate {}
+                //,Caffeine {}
+                //,Redeye {}
+                //,Seperator {}
+                //,Weather {}
+                //,Clock {}
+                Battery {}
+                //,NotificationTray {}
+
+
+            ]
+        }
+    }
+
+    // only show on main/active monitor
+    Brightness {}
+
+    // connect to shell services
+    Component.onCompleted: [Service.Shell.init(), Settings_Alpha.init(),
+        // Settings_Beta.init(),
+        Lockscreen.init(), Notifications.init(), AppLauncher.init(10 // the maximum number of lines to display
+        , true // hide category filters
+        ), Service.Redeye.init(5500 // temperature in K
+        , 95 // gamma (0-100)
+        , true // enable geo located sunset/sunrise times (static times will be ignored if 'true')
+        , "19:00" // static start time
+        , "7:00" // static end time
+        )]
 }
