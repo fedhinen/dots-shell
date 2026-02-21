@@ -8,18 +8,18 @@ Item {
     id: root
     property color fillColour: {
         if (isCharging) {
-            return "cornflowerblue";
+            return "#67afc1";
         }
 
         switch (Math.round((percentage * 100) / 10) * 10) {
         case 10:
-            return "red";
+            return "#df5b61";
         case 20:
-            return "orange";
+            return "#de8f78";
         case 30:
-            return "orange";
+            return "#de8f78";
         default:
-            return "forestgreen";
+            return "#78b892";
         }
     }
     property real percentage

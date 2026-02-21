@@ -25,55 +25,7 @@ PanelWindow {
     }
     screen: modelData
     implicitHeight: barHeight
-    color: "black"
-
-    Rectangle {
-        anchors.fill: parent
-        color: "black"
-        opacity: 0.975
-
-        // // margin line
-        // Rectangle {
-        //     anchors.bottom: parent.bottom
-        //     width: parent.width
-        //     height: 0
-        //     color: GlobalVariables.colours.light
-        //     // opacity: 0.4
-        // }
-
-        // round bar corners
-        Rectangle {
-            anchors.left: parent.left
-            width: GlobalVariables.controls.barHeight
-            height: width
-            color: "black"
-            layer.enabled: true
-            layer.effect: OpacityMask {
-                invert: true
-                maskSource: Rectangle {
-                    width: GlobalVariables.controls.barHeight
-                    height: width
-                    topLeftRadius: height / 3
-                }
-            }
-        }
-
-        Rectangle {
-            anchors.right: parent.right
-            width: GlobalVariables.controls.barHeight
-            height: width
-            color: "black"
-            layer.enabled: true
-            layer.effect: OpacityMask {
-                invert: true
-                maskSource: Rectangle {
-                    width: GlobalVariables.controls.barHeight
-                    height: width
-                    topRightRadius: height / 3
-                }
-            }
-        }
-    }
+    color: "#101213"
 
     // section bar into left, right, and centre for widget placement
     Row {
