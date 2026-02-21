@@ -45,22 +45,6 @@ Item {
             Layout.alignment: Qt.AlignVCenter
         }
     }
-
-    Rectangle {
-        id: hoverBg
-        anchors.fill: parent
-        anchors.margins: 2
-        radius: Config.borderRadius
-        color: Config.hoverColor
-        opacity: mouseArea.containsMouse ? 1 : 0
-
-        Behavior on opacity {
-            NumberAnimation {
-                duration: 100
-            }
-        }
-    }
-
     MouseArea {
         id: mouseArea
         anchors.fill: parent
@@ -71,17 +55,6 @@ Item {
             if (root.controlCenter) {
                 root.controlCenter.toggle();
             }
-        }
-    }
-
-    ToolTip {
-        visible: mouseArea.containsMouse
-        text: {
-            if (!connected)
-                return "Not connected";
-            if (type === "ethernet")
-                return "Ethernet: " + NetworkService.ssid;
-            return "WiFi: " + NetworkService.ssid + " (" + strength + "%)";
         }
     }
 }

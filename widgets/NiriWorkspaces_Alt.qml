@@ -53,10 +53,6 @@ Row {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: niri.focusWorkspaceById(model.id)
                     }
-                    ToolTip {
-                        visible: dotMouseArea.containsMouse
-                        text: model.name || ("Workspace " + (model.index + 1))
-                    }
                 }
             }
         }

@@ -10,10 +10,12 @@ import Quickshell.Io
 import qs.services as Service
 import qs.widgets
 import Niri 0.1
+import qs.widgets.cc
 
 Scope {
     id: root
     property var colour: GlobalVariables.colours
+    property alias controlCenter: ccLoader.item
 
     Niri {
         id: niri
@@ -27,6 +29,14 @@ Scope {
         }
         onErrorOccurred: function (error) {
             console.error("Niri connection error:", error);
+        }
+    }
+
+    LazyLoader {
+        id: ccLoader
+        active: true
+        component: ControlCenter {
+            id: controlCenterInstance
         }
     }
 

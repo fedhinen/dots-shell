@@ -31,7 +31,7 @@ Item {
 
     Item {
         id: batteryItem
-        width: 28
+        width: 30
         height: 18
         Rectangle {
             id: batteryContainer
