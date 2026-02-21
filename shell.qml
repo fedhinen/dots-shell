@@ -38,38 +38,16 @@ Scope {
 
             leftItems: [
                 Clock {}
-                //Power {}
-                //,Network {}
-                //,Bluetooth {}
-                //,Audio {}
-                //,MusicPlayer {
-                //	minBarWidth: 100
-                //}
-                // ,Shazam {}
-
-
             ]
 
             centreItems: [
-                // NiriWorkspaces {
-                // 	// colours: [colour.highlight] // list of possible highlight colours
-                // 	clean: false // hide windows' dots
-                // }
                 NiriWorkspaces_Alt {}
             ]
 
             rightItems: [
                 Tray {},
-                //,NotifyUpdate {}
-                //,Caffeine {}
-                //,Redeye {}
-                //,Seperator {}
-                //,Weather {}
-                //,Clock {}
-                Battery {}
-                //,NotificationTray {}
-
-
+                Battery {},
+                Network {}
             ]
         }
     }
@@ -78,9 +56,7 @@ Scope {
     Brightness {}
 
     // connect to shell services
-    Component.onCompleted: [Service.Shell.init(), Settings_Alpha.init(),
-        // Settings_Beta.init(),
-        Lockscreen.init(), Notifications.init(), AppLauncher.init(10 // the maximum number of lines to display
+    Component.onCompleted: [Service.Shell.init(), Settings_Alpha.init(), Lockscreen.init(), Notifications.init(), AppLauncher.init(10 // the maximum number of lines to display
         , true // hide category filters
         ), Service.Redeye.init(5500 // temperature in K
         , 95 // gamma (0-100)

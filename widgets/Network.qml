@@ -1,233 +1,87 @@
-/*-------------------------------------
---- Network.qml - widgets by andrel ---
--------------------------------------*/
-
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Controls
 import Quickshell
-import Quickshell.Widgets
-import qs
 import qs.services
-import qs.controls
-import qs.styles as Style
+import qs
 
-QsButton { id: root
-	// return network icon representing signal strength
-	function networkIcon(network) {
-		// prevent warnings about type error
-		if (!network || typeof network.signal !== "number") return Quickshell.iconPath("network-wireless-offline");
+Item {
+    id: networkIndicator
 
-		// return icon to the nearest ¼
-		switch (Math.round(network.signal /25) *25) {
-			case 0:
-				return Quickshell.iconPath("network-wireless-signal-none");
-			case 25:
-				return Quickshell.iconPath("network-wireless-signal-weak");
-			case 50:
-				return Quickshell.iconPath("network-wireless-signal-ok");
-			case 75:
-				return Quickshell.iconPath("network-wireless-signal-good");
-			case 100:
-				return Quickshell.iconPath("network-wireless-signal-excellent");
-		}
-	}
+    implicitWidth: row.implicitWidth
+    implicitHeight: 38
 
-	anim: false
-	shade: false
-	onClicked: {
-		if (!popout.isOpen) Network.updateWirelessNetworks();
-		popout.toggle();
-	}
-	content: IconImage {
-		implicitSize: GlobalVariables.controls.iconSize
-		source: {
-			// get the network type -> network state
-			switch (Network.status.type) {
-				case 'wifi': {
-					switch (true) {
-						case Network.status.state.includes("connecting"):
-							return Quickshell.iconPath("network-wireless-acquiring");
-						case Network.status.state === "connected":
-							return networkIcon(Network.wirelessNetworks.find(n => n.ssid === Network.status.connection));
-						default:
-							return Quickshell.iconPath("network-wireless-offline");
-					}
-				}
-						case 'ethernet':
-							switch (true) {
-								case Network.status.state.includes("connecting"):
-									return Quickshell.iconPath("network-wired-acquiring");
-								case Network.status.state === "connected":
-									return Quickshell.iconPath("network-wired");
-								default:
-									return Quickshell.iconPath("network-wired-offline");
-							}
-								default:
-									return Quickshell.iconPath("nm-no-connection");
-			}
-		}
-	}
+    property bool connected: NetworkService.connected
+    property string type: NetworkService.type
+    property string strength: NetworkService.strength
 
-	Popout { id: popout
-		onIsOpenChanged: if (!isOpen) bodyContent.ScrollBar.vertical.position = 0.0;
-		anchor: root
-		header: RowLayout { id: headerContent
-			width: screen.width /7
+    RowLayout {
+        id: row
+        anchors.centerIn: parent
+        spacing: 4
 
-			// wifi adapter toggle
-			Row {
-				Layout.margins: GlobalVariables.controls.padding
-				Layout.rightMargin: 0
-				spacing: 3
+        Text {
+            text: {
+                if (!connected || type === "none")
+                    return "󰤭";
+                if (type === "ethernet")
+                    return "󰈀";
 
-				IconImage {
-					anchors.verticalCenter: parent.verticalCenter
-					implicitSize: GlobalVariables.controls.iconSize
-					source: Quickshell.iconPath("network-wireless-signal-excellent")
-				}
+                if (strength < 25)
+                    return "󰤟";
+                if (strength < 50)
+                    return "󰤢";
+                if (strength < 75)
+                    return "󰤥";
+                return "󰤨";
+            }
+            font {
+                family: "Symbols Nerd Font, JetBrainsMono Nerd Font, Font Awesome 6 Free"
+                pointSize: 12
+                weight: 600
+            }
 
-				QsSwitch {
-					isOn: Network.status?.radio || false
-					onClicked: Network.radio(!isOn);
-				}
-			}
+            color: GlobalVariables.colours.light
+            Layout.alignment: Qt.AlignVCenter
+        }
+    }
 
-			// refresh
-			QsButton {
-				Layout.alignment: Qt.AlignRight
-				Layout.margins: GlobalVariables.controls.padding
-				Layout.leftMargin: 0
-				tooltip: Text {
-					text: "Refresh"
-					color: GlobalVariables.colours.text
-					font: GlobalVariables.font.regular
-				}
-				onClicked: Network.rescan();
-				content: Style.Button {
-					IconImage {
-						anchors.centerIn: parent
-						implicitSize: GlobalVariables.controls.iconSize
-						source: Quickshell.iconPath("view-refresh")
-					}
-				}
-			}
-		}
-		body: ScrollView { id: bodyContent
-			topPadding: GlobalVariables.controls.padding
-			bottomPadding: GlobalVariables.controls.padding
-			width: screen.width /7
-			height: Math.min(screen.height /3, layout.height+ topPadding *2)
+    Rectangle {
+        id: hoverBg
+        anchors.fill: parent
+        anchors.margins: 2
+        radius: Config.borderRadius
+        color: Config.hoverColor
+        opacity: mouseArea.containsMouse ? 1 : 0
 
-			ColumnLayout { id: layout
-				spacing: GlobalVariables.controls.spacing
-				width: bodyContent.width -bodyContent.effectiveScrollBarWidth
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 100
+            }
+        }
+    }
 
-				// top padding element
-				Item { Layout.preferredHeight: 1; }
+    MouseArea {
+        id: mouseArea
+        anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
 
-				// contected network entry
-				QsButton { id: connectedWirelessNetwork
-					visible: Network.wirelessNetworks.find(n => n.ssid === Network.status.connection) || false
-					Layout.fillWidth: true
-					Layout.minimumWidth: networkLayout.width
-					Layout.preferredHeight: networkLayout.height
-					shade: false
-					highlight: true
-					onClicked: Network.controlNm(["nmcli", "c", "down", "id", Network.status.connection]);
-					content: Row { id: networkLayout
-						leftPadding: GlobalVariables.controls.padding
-						rightPadding: GlobalVariables.controls.padding
-						spacing: GlobalVariables.controls.spacing
-						width: connectedWirelessNetwork.width
+        onClicked: {
+            if (root.controlCenter) {
+                root.controlCenter.toggle();
+            }
+        }
+    }
 
-						// network icon
-						IconImage {
-							anchors.verticalCenter: parent.verticalCenter
-							implicitSize: 24
-							source: networkIcon(Network.wirelessNetworks.find(n => n.ssid === Network.status.connection))
-
-							// display if network is encrypted
-							IconImage {
-								anchors { right: parent.right; bottom: parent.bottom; }
-								implicitSize: 8
-								source: Quickshell.iconPath("network-wireless-encrypted-symbolic", "network-wireless-encrypted")
-							}
-						}
-
-						Column {
-							anchors.verticalCenter: parent.verticalCenter
-
-							// network name
-							Text {
-								text: Network.status.connection || ""
-								color: GlobalVariables.colours.text
-								font: GlobalVariables.font.semibold
-							}
-
-							// display on connected network
-							Text {
-								text: "Connected"
-								color: GlobalVariables.colours.windowText
-								font: GlobalVariables.font.small
-							}
-						}
-					}
-				}
-
-				Repeater {
-					model: Network.wirelessNetworks.filter(n => n.ssid && n.ssid !== Network.status.connection) // don't list connected network
-					delegate: QsButton { id: wirelessNetwork
-						required property var modelData
-
-						shade: false
-						highlight: true
-						Layout.fillWidth: true
-						onClicked: Network.controlNm(["nmcli", "d", "w", "c", modelData.ssid]);
-						content: Row {
-							leftPadding: GlobalVariables.controls.padding
-							rightPadding: GlobalVariables.controls.padding
-							spacing: GlobalVariables.controls.spacing
-							width: wirelessNetwork.width
-
-							// network icon
-							IconImage {
-								anchors.verticalCenter: parent.verticalCenter
-								implicitSize: 24
-								source: networkIcon(modelData)
-
-								// display if network is encrypted
-								IconImage {
-									anchors { right: parent.right; bottom: parent.bottom; }
-									implicitSize: 8
-									source: Quickshell.iconPath("network-wireless-encrypted-symbolic", "network-wireless-encrypted")
-								}
-							}
-
-							Column {
-								anchors.verticalCenter: parent.verticalCenter
-
-								// network name
-								Text {
-									text: modelData.ssid
-									color: GlobalVariables.colours.text
-									font: GlobalVariables.font.regular
-								}
-
-								Text {
-									visible: Network.savedNetworks.some(n => n.ssid.includes(modelData.ssid))
-									text: "Saved"
-									color: GlobalVariables.colours.windowText
-									font: GlobalVariables.font.small
-								}
-							}
-						}
-					}
-				}
-
-				// bottom padding element
-				Item { Layout.preferredHeight: 1; }
-			}
-		}
-	}
+    ToolTip {
+        visible: mouseArea.containsMouse
+        text: {
+            if (!connected)
+                return "Not connected";
+            if (type === "ethernet")
+                return "Ethernet: " + NetworkService.ssid;
+            return "WiFi: " + NetworkService.ssid + " (" + strength + "%)";
+        }
+    }
 }
